@@ -1,1 +1,32 @@
-../../../framework/protos/seedmsg.proto
+syntax = "proto3";
+
+package queue;
+
+message SeedMsg {
+
+  enum SeedType {
+    NORMAL = 0;
+    CRASH = 1;
+    HANG = 2;
+  }
+
+  string id = 1;
+  bytes content = 2;
+  SeedType type = 3;
+  int32 conditional = 4;
+  string fuzzer_id = 5;
+  repeated string parent_ids = 6;
+
+}
+
+message JobMsg {
+  string fuzzer_id = 1;
+  repeated SeedMsg seeds = 2;
+}
+
+message TestCaseReportReply {
+  oneof content {
+    string id = 2;
+    string error = 1;
+  }
+}

@@ -15,5 +15,5 @@ fuzzer-honggfuzz-lava: fuzzer-system-honggfuzz
 fuzzer-honggfuzz-google: fuzzer-system-honggfuzz
 	docker build -t fuzzer-honggfuzz:google -f Dockerfile.google .
 
-fuzzer-honggfuzz: fuzzer-honggfuzz-binutils fuzzer-honggfuzz-lava fuzzer-honggfuzz-google
+fuzzer-honggfuzz: fuzzer-honggfuzz-binutils # fuzzer-honggfuzz-lava fuzzer-honggfuzz-google
 	docker build -t fuzzer-honggfuzz -f Dockerfile.all .

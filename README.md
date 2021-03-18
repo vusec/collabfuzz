@@ -46,7 +46,7 @@ The setup consists of the following components:
 3. Install the ```collab_fuzz_xxx``` tools
     * ```cd runners && python setup.py install```
 4. Test run (runs 1 afl instance and collab framework):
-    * ```mkdir myrun && cd myrun && collab_fuzz_compose -f afl --scheduler=enfuzz -- base64 && docker-compose up```
+    * ```mkdir myrun && cd myrun && collab_fuzz_compose -f afl --scheduler=enfuzz -- objdump && docker-compose up```
     * To run with more fuzzers (2 afl + qsym + fairfuzz + aflfast): ```collab_fuzz_runner -f afl afl qsym fairfuzz aflfast --scheduler=enfuzz -- who```
 
 Alternatively, to avoid the long building times, you can fetch the docker
@@ -70,3 +70,58 @@ machine. To avoid this, edit your `daemon.json` (typically `/etc/docker/daemon.j
     }
 }
 ```
+
+# Binutils Quickstart guide
+At the moment the LAVA-M and GFT builds are broken. Binutils should still work, though.
+
+## Setup virtualenv 
+    * ```virtualenv --python=python3 venv```
+    * ```source venv/bin/activate```
+
+
+## Build the framework (for now only supports binutils, other builds are broken):
+
+```make framework-binutils```
+
+## Build fuzzer base images:
+
+Remember the AFL/QSYM prerequisites (needed on every reboot):
+
+```
+echo 0 | sudo tee /proc/sys/kernel/yama/ptrace_scope
+cd /sys/devices/system/cpu
+echo performance | sudo tee cpu*/cpufreq/scaling_governor
+```
+Then build the docker images (we only build AFL for now):
+
+```cd docker && make fuzzer-afl```
+
+## Build helper tools
+
+```make tools```
+
+
+You might need to install the collab_fuzz_runner tools in the following way:
+
+```cd runner && make collab_fuzz_runner```
+
+## Build actual targets (for now only build binutils)
+
+```collab_fuzz_build -f afl -t objdump```
+
+Or to build all of binutils for all fuzzers:
+```collab_fuzz_build -s binutils```
+
+## Test it all (run objdump with afl)
+
+```
+mkdir tmp_run && cd tmp_run && collab_fuzz_compose -f afl -- objdump
+```
+
+And then try to start the campaign:
+
+```docker-compose up --abort-on-container-exit```
+
+To clean up the campaign after exiting (i.e., delete the volumes):
+```docker-compose down -v```
+

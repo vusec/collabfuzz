@@ -1,1 +1,47 @@
-../../../framework/protos/fuzzerctrlmsg.proto
+syntax = "proto3";
+
+// TODO: Split FuzzerCtrlMsg into three different messages and split the
+// Command enum accordingly.
+
+enum CtrlCommand {
+  COMMAND_UNSPECIFIED = 0;
+
+  COMMAND_RUN = 1;
+  COMMAND_PAUSE = 2;
+  COMMAND_KILL = 3;
+  COMMAND_SET_PRIORITY = 4;
+
+  // Driver request
+  COMMAND_REGISTER = 5;
+  COMMAND_DEREGISTER = 6;
+  COMMAND_READY = 7;
+
+  // Server reply
+  COMMAND_ACK = 8;
+  COMMAND_ERR = 9;
+}
+
+enum FuzzerType {
+  FUZZER_TYPE_UNSPECIFIED = 0;
+  FUZZER_TYPE_AFL = 1;
+  FUZZER_TYPE_ANGORA = 2;
+  FUZZER_TYPE_QSYM = 3;
+  FUZZER_TYPE_LIBFUZZER = 4;
+  FUZZER_TYPE_HONGGFUZZ = 5;
+  FUZZER_TYPE_AFLFAST = 6;
+  FUZZER_TYPE_FAIRFUZZ = 7;
+  FUZZER_TYPE_RADAMSA = 8;
+
+  // Add new fuzzer types to this enum
+}
+
+message FuzzerCtrlMsg {
+  CtrlCommand command = 1;
+  string fuzzer_id = 2;
+
+  // Required only when sending a REGISTER message
+  FuzzerType fuzzer_type = 3;
+
+  // Required only when sending a SET_PRIORITY message
+  int32 fuzzer_priority = 4;
+}

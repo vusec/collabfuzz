@@ -3,7 +3,7 @@
 DOCKER_FLAGS ?= 
 REMOTE_REGISTRY ?= sarek.osterlund.xyz
 
-all: fuzzer-afl fuzzer-aflfast fuzzer-qsym fuzzer-fairfuzz fuzzer-honggfuzz fuzzer-radamsa #fuzzer-libfuzzer
+all: fuzzer-afl fuzzer-aflfast  fuzzer-fairfuzz fuzzer-honggfuzz fuzzer-radamsa # fuzzer-qsym fuzzer-libfuzzer
 
 rebuild: DOCKER_FLAGS = --no-cache
 rebuild: all
@@ -16,6 +16,9 @@ prereqs:
 fuzzer-system:
 	$(MAKE) -C system DOCKER_FLAGS=${DOCKER_FLAGS}
 
+fuzzer-aflplusplus:
+	$(MAKE) -C aflplusplus DOCKER_FLAGS=${DOCKER_FLAGS}
+
 fuzzer-plain:
 	$(MAKE) -C plain DOCKER_FLAGS=${DOCKER_FLAGS}
 
@@ -25,7 +28,7 @@ fuzzer-qsym: fuzzer-plain
 fuzzer-afl: fuzzer-system
 	$(MAKE) -C afl DOCKER_FLAGS=${DOCKER_FLAGS}
 
-fuzzer-aflfast: fuzzer-afl
+fuzzer-aflfast: fuzzer-aflplusplus
 	$(MAKE) -C aflfast DOCKER_FLAGS=${DOCKER_FLAGS}
 
 fuzzer-fairfuzz: fuzzer-afl
@@ -34,7 +37,7 @@ fuzzer-fairfuzz: fuzzer-afl
 fuzzer-honggfuzz: fuzzer-system
 	$(MAKE) -C honggfuzz DOCKER_FLAGS=${DOCKER_FLAGS}
 
-fuzzer-radamsa: fuzzer-system
+fuzzer-radamsa: fuzzer-aflplusplus
 	$(MAKE) -C radamsa DOCKER_FLAGS=${DOCKER_FLAGS}
 
 

@@ -2,6 +2,19 @@ FROM ubuntu:18.04
 RUN apt-get update && apt-get install -y build-essential python2.7-dev python3.7-dev
 WORKDIR /work
 RUN useradd -ms /bin/bash coll
+
+# Install clang for AFL++ install
+RUN apt-get update && apt-get install -y ca-certificates
+RUN echo "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main" >> /etc/apt/sources.list
+RUN echo "deb-src http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main" >> /etc/apt/sources.list
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 15CF4D18AF4F7421
+RUN apt-get update && apt-get install -y clang-9 llvm-9-dev lld-9 lld-9 clangd-9
+#RUN rm /usr/bin/clang && rm /usr/bin/clang++ && rm /usr/bin/llvm-config
+RUN ln -s /usr/bin/clang-9 /usr/bin/clang
+RUN ln -s /usr/bin/clang++-9 /usr/bin/clang++
+RUN ln -s /usr/bin/llvm-config-9 /usr/bin/llvm-config
+
+
 COPY --from=fuzzer-system:aflplusplus --chown=coll:coll /work /work
 RUN cd AFLplusplus && make install
 RUN rm -rf /work
@@ -9,9 +22,9 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 
 COPY --from=fuzzer-aflplusplus:binutils --chown=coll:coll /targets/aflplusplus-binutils /targets/binutils
-COPY --from=fuzzer-aflplusplus:lava --chown=coll:coll /targets/aflplusplus-lava /targets/lava
-RUN apt-get update && apt-get install -y libarchive-dev libglib2.0 libgss3
-COPY --from=fuzzer-aflplusplus:google --chown=coll:coll /targets/aflplusplus-google /targets/google
+#COPY --from=fuzzer-aflplusplus:lava --chown=coll:coll /targets/aflplusplus-lava /targets/lava
+#RUN apt-get update && apt-get install -y libarchive-dev libglib2.0 libgss3
+#COPY --from=fuzzer-aflplusplus:google --chown=coll:coll /targets/aflplusplus-google /targets/google
 
 WORKDIR /home/coll
 USER coll

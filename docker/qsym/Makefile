@@ -10,6 +10,6 @@ fuzzer-system-qsym: Dockerfile.system
 fuzzer-google-qsym: Dockerfile.google
 	docker build $(DOCKER_FLAGS) -t fuzzer-qsym:google -f Dockerfile.google .
 
-fuzzer-qsym: fuzzer-system-qsym fuzzer-google-qsym
+fuzzer-qsym: fuzzer-system-qsym # fuzzer-google-qsym
 	docker build $(DOCKER_FLAGS) -t fuzzer-qsym -f Dockerfile.all .
 

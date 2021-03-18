@@ -15,8 +15,8 @@ RUN mkdir /targets
 RUN mkdir /targets-plain
 COPY --from=fuzzer-afl --chown=coll:coll /targets /targets
 COPY --from=fuzzer-plain --chown=coll:coll /targets /targets-plain
-COPY --from=fuzzer-qsym:google --chown=coll:coll /targets/google /targets/google
-COPY --from=fuzzer-qsym:google --chown=coll:coll /targets-plain/google /targets-plain/google
+#COPY --from=fuzzer-qsym:google --chown=coll:coll /targets/google /targets/google
+#COPY --from=fuzzer-qsym:google --chown=coll:coll /targets-plain/google /targets-plain/google
 
 
 

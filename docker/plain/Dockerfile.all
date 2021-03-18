@@ -6,9 +6,9 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 RUN mkdir /targets
 COPY --from=fuzzer-plain:binutils --chown=coll:coll /targets/binutils /targets/binutils
-COPY --from=fuzzer-plain:lava --chown=coll:coll /targets/lava /targets/lava
-RUN apt-get update && apt-get install -y libarchive-dev libglib2.0 libgss3
-COPY --from=fuzzer-plain:google --chown=coll:coll /targets/google /targets/google
+#COPY --from=fuzzer-plain:lava --chown=coll:coll /targets/lava /targets/lava
+#RUN apt-get update && apt-get install -y libarchive-dev libglib2.0 libgss3
+#COPY --from=fuzzer-plain:google --chown=coll:coll /targets/google /targets/google
 
 
 WORKDIR /home/coll

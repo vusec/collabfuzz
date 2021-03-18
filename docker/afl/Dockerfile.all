@@ -8,9 +8,9 @@ RUN rm -rf /work
 ENV DEBIAN_FRONTEND=noninteractive
 
 COPY --from=fuzzer-afl:binutils --chown=coll:coll /targets/afl-binutils /targets/binutils
-COPY --from=fuzzer-afl:lava --chown=coll:coll /targets/afl-lava /targets/lava
-RUN apt-get update && apt-get install -y libarchive-dev libglib2.0 libgss3
-COPY --from=fuzzer-afl:google --chown=coll:coll /targets/afl-google /targets/google
+#COPY --from=fuzzer-afl:lava --chown=coll:coll /targets/afl-lava /targets/lava
+#RUN apt-get update && apt-get install -y libarchive-dev libglib2.0 libgss3
+#COPY --from=fuzzer-afl:google --chown=coll:coll /targets/afl-google /targets/google
 
 WORKDIR /home/coll
 USER coll
