@@ -1,0 +1,13 @@
+diff --git a/common.sh b/common.sh
+index 4aac8cf..2d9af0e 100644
+--- a/common.sh
++++ b/common.sh
+@@ -19,7 +19,7 @@ STANDALONE_TARGET=0
+ AFL_SRC=${AFL_SRC:-$(dirname $(dirname $SCRIPT_DIR))/AFL}
+ HONGGFUZZ_SRC=${HONGGFUZZ_SRC:-$(dirname $(dirname $SCRIPT_DIR))/honggfuzz}
+ COVERAGE_FLAGS="-O0 -fsanitize-coverage=trace-pc-guard"
+-FUZZ_CXXFLAGS="-O2 -fno-omit-frame-pointer -gline-tables-only -fsanitize=address -fsanitize-address-use-after-scope -fsanitize-coverage=trace-pc-guard,trace-cmp,trace-gep,trace-div"
++FUZZ_CXXFLAGS=${FUZZER_CXXFLAGS:-"-O2 -fno-omit-frame-pointer -gline-tables-only -fsanitize=address -fsanitize-address-use-after-scope -fsanitize-coverage=trace-pc-guard,trace-cmp,trace-gep,trace-div"}
+ CORPUS=CORPUS-$EXECUTABLE_NAME_BASE
+ JOBS=${JOBS:-"8"}
+ 

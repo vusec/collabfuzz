@@ -1,0 +1,1 @@
+cargo_build(NAME bb_taint_tracer_runtime_rs)

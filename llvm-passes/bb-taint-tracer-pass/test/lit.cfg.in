@@ -1,0 +1,50 @@
+import lit.formats
+from pathlib import Path
+from functools import reduce
+
+config.name = '@PROJECT_NAME@'
+config.test_format = lit.formats.ShTest(True)
+
+config.test_source_root = '@CMAKE_CURRENT_SOURCE_DIR@'
+config.suffixes = ['.ll', '.c', '.cpp']
+
+pass_path = Path('@PASS_PATH@')
+if not pass_path.is_file():
+    print(f'Pass not found: {pass_path}')
+    exit(1)
+
+idassigner_path = Path('@IDASSIGNER_PASS_PATH@')
+if not idassigner_path.is_file():
+    print(f'IDAssigner pass not found: {idassigner_path}')
+    exit(1)
+
+rtlib_path = Path('@RTLIB_PATH@')
+if not rtlib_path.is_file():
+    print(f'Runtime library not found: {rtlib_path}')
+    exit(1)
+
+abilist_path = Path('@GENERATED_ABILIST_PATH@')
+if not abilist_path.is_file():
+    print(f'ABI list not found: {abilist_path}')
+    exit(1)
+
+config.substitutions.append(
+    ('%opt_tracer', f'opt -load {idassigner_path} -load {pass_path}'))
+config.substitutions.append(
+    ('%clang_tracer', 'clang -fno-discard-value-names -flto=thin ' +
+     f'-fuse-ld=gold -Xclang -load -Xclang {idassigner_path} ' +
+     f'-Xclang -load -Xclang {pass_path}'))
+config.substitutions.append(('%rtlib_tracer', str(rtlib_path)))
+config.substitutions.append(('%rtdeps', '@RTLIB_DEPS@'))
+config.substitutions.append((
+    '%dfsan_opts',
+    f'-fsanitize=dataflow -fno-sanitize-blacklist -fsanitize-blacklist={abilist_path}'
+))
+
+wrapped_symbols = '@BBTaintTracer_DFSAN_RT_OVERRIDE@'.split(';')
+linker_commands = reduce(lambda acc, elem: acc + [f'--wrap={elem}'],
+                         wrapped_symbols, [])
+compiler_command = ','.join(linker_commands)
+config.substitutions.append(('%ld_wrap', f'-Wl,{compiler_command}'))
+config.substitutions.append(
+    ('%ld_path', f'LD_LIBRARY_PATH={rtlib_path.parent}'))

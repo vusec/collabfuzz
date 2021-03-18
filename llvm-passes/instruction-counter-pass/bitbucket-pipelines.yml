@@ -1,0 +1,24 @@
+image: fedora:31
+
+pipelines:
+    default:
+        - step:
+            caches:
+                - dnf
+            script:
+                - dnf install --refresh --assumeyes
+                    clang llvm-devel cmake make gcc-c++ boost-static
+                    python3-lit git openssh
+                - sed --in-place=.orig
+                      's/if (ARG_SHARED)/if (ARG_SHARED OR ARG_MODULE)/'
+                      /usr/lib64/cmake/llvm/AddLLVM.cmake
+                - git submodule update --init --recursive
+                - mkdir /tmp/build
+                - cd /tmp/build
+                - cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON
+                        $BITBUCKET_CLONE_DIR
+                - make check
+
+definitions:
+    caches:
+        dnf: /var/cache/dnf

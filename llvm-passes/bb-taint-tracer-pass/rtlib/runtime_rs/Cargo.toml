@@ -1,0 +1,17 @@
+[package]
+name = "bb_taint_tracer_runtime_rs"
+version = "0.1.0"
+authors = ["Elia Geretto <elia.f.geretto@gmail.com>"]
+edition = "2018"
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+lazy_static = "1.4"
+exitcode = "1.1"
+serde = { version = "1.0", features = ["derive"] }
+csv = "1.1"
+
+[build-dependencies]
+bindgen = "0.53"

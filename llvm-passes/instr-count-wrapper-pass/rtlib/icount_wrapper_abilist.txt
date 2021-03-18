@@ -1,0 +1,6 @@
+fun:__inst_count_trace=uninstrumented
+fun:__inst_count_trace=custom
+fun:__inst_count_create=uninstrumented
+fun:__inst_count_create=discard
+fun:__inst_count_destroy=uninstrumented
+fun:__inst_count_destroy=discard

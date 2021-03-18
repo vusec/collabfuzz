@@ -1,0 +1,42 @@
+; ----------------------------------------------------------------------
+; Protocol used by the drivers to request control actions to the server
+; ----------------------------------------------------------------------
+
+ctrl-protocol	= registration *ready deregistration
+registration	= register-req register-rep
+deregistration	= deregister-req (ack-rep / error-rep)
+ready		= ready-req (ack-rep / error-rep)
+
+; Control messages
+register-req	= %s"C" *OCTET		; FuzzerCtrlMsg(REGISTER, fuzzer_type)
+register-rep	= %s"C" *OCTET		; FuzzerCtrlMsg(REGISTER, fuzzer_id)
+ack-rep		= %s"C" *OCTET		; FuzzerCtrlMsg(ACK)
+error-rep	= %s"C" *OCTET		; FuzzerCtrlMsg(ERR)
+
+
+; ----------------------------------------------------------------
+; Protocol used to push analysis requests to the analysis workers
+; ----------------------------------------------------------------
+; To each analysis request sent on the PUSH socket, the worker will reply with
+; a reply sent on the PULL socket when the analysis is finished.
+
+worker-push	= analysis-req
+worker-pull	= analysis-rep
+
+; Worker messages
+analysis-req	= test-id test-content
+analysis-rep	= test-id pass-type result-content
+test-id		= 8OCTET		; LE integer
+test-content	= *OCTET
+pass-type	= *ALPHA		; Supported pass type
+result-content	= *OCTET
+
+
+; ------------------------------------------------------------------------
+; Protocol used to publish control commands or seeds for a specific fuzzer
+; ------------------------------------------------------------------------
+; The protocol is unidirectional so only the message structure is relevant.
+
+pub-msg		= fuzzer-id (job-msg / ctrl-msg)
+job-msg		= %s"S" *OCTET	; JobMsg
+ctrl-msg	= %s"C" *OCTET	; FuzzerCtrlMsg(RUN|PAUSE|KILL)

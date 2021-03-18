@@ -1,0 +1,371 @@
+#!/usr/bin/env python3
+
+from enum import Enum
+from pathlib import Path
+from argparse import ArgumentParser, REMAINDER
+from functools import reduce
+from concurrent import futures
+import subprocess
+import logging
+
+
+class LLVMPass(Enum):
+    ID_ASSIGNER = 1
+    EDGE_TRACER = 2
+    CONDITION_TRACER = 3
+    BB_REACHABILITY = 4
+    BB_TAINT_TRACER = 5
+    INSTRUCTION_COUNT = 6
+    INST_COUNT_WRAPPER = 7
+    STATIC_METRICS = 8
+    INPUT_BYTES_TRACER = 9
+
+
+binary_to_deps = {
+    "edge_tracer": [LLVMPass.ID_ASSIGNER, LLVMPass.EDGE_TRACER],
+    "cond_tracer": [LLVMPass.ID_ASSIGNER, LLVMPass.CONDITION_TRACER],
+    "bb_taint_tracer": [LLVMPass.ID_ASSIGNER, LLVMPass.BB_TAINT_TRACER],
+    "instr_counter": [
+        LLVMPass.ID_ASSIGNER,
+        LLVMPass.INST_COUNT_WRAPPER,
+        LLVMPass.INSTRUCTION_COUNT,
+    ],
+    "bytes_tracer": [LLVMPass.ID_ASSIGNER, LLVMPass.INPUT_BYTES_TRACER],
+}
+
+static_to_deps = {
+    "bb-reach": [LLVMPass.ID_ASSIGNER, LLVMPass.BB_REACHABILITY],
+    "static-metrics": [LLVMPass.ID_ASSIGNER, LLVMPass.STATIC_METRICS],
+}
+
+llvm_passes = {
+    LLVMPass.ID_ASSIGNER: Path("@ID_ASSIGNER_PASS_PATH@"),
+    LLVMPass.EDGE_TRACER: Path("@EDGE_TRACER_PASS_PATH@"),
+    LLVMPass.CONDITION_TRACER: Path("@CONDITION_TRACER_PASS_PATH@"),
+    LLVMPass.BB_REACHABILITY: Path("@BB_REACHABILITY_PASS_PATH@"),
+    LLVMPass.BB_TAINT_TRACER: Path("@BB_TAINT_TRACER_PASS_PATH@"),
+    LLVMPass.INSTRUCTION_COUNT: Path("@INSTRUCTION_COUNT_PASS_PATH@"),
+    LLVMPass.INST_COUNT_WRAPPER: Path("@INST_COUNT_WRAPPER_PASS_PATH@"),
+    LLVMPass.STATIC_METRICS: Path("@STATIC_BRANCH_METRICS_PASS_PATH@"),
+    LLVMPass.INPUT_BYTES_TRACER: Path("@INPUT_BYTES_TRACER_PASS_PATH@"),
+}
+
+rt_libs = {
+    LLVMPass.EDGE_TRACER: (
+        ["@EDGE_TRACER_RTLIB_PATH@"],
+        "@EDGE_TRACER_RTLIB_DEPS@".split(" "),
+    ),
+    LLVMPass.CONDITION_TRACER: (
+        ["@CONDITION_TRACER_RTLIB_PATH@"],
+        "@CONDITION_TRACER_RTLIB_DEPS@".split(" "),
+    ),
+    LLVMPass.BB_TAINT_TRACER: (["@BB_TAINT_TRACER_RTLIB_PATH@"], []),
+    LLVMPass.INSTRUCTION_COUNT: (
+        ["@INSTRUCTION_COUNT_RTLIB_PATH@"],
+        "@INSTRUCTION_COUNT_RTLIB_DEPS@".split(" "),
+    ),
+    LLVMPass.INST_COUNT_WRAPPER: (
+        [
+            "-Wl,--whole-archive",
+            "@INST_COUNT_WRAPPER_RTLIB_PATH@",
+            "-Wl,--no-whole-archive",
+        ],
+        [],
+    ),
+    LLVMPass.INPUT_BYTES_TRACER: (["@INPUT_BYTES_TRACER_RTLIB_PATH@"], []),
+}
+
+custom_abilist_flags = {
+    LLVMPass.BB_TAINT_TRACER: "-dfsan-abilist",
+    LLVMPass.INSTRUCTION_COUNT: "-icount-abilist",
+    LLVMPass.INPUT_BYTES_TRACER: "-dfsan-abilist",
+}
+
+
+def get_ld_wrap_cmdline(wrapped_symbols):
+    linker_commands = reduce(
+        lambda acc, elem: acc + [f"--wrap={elem}"], wrapped_symbols, []
+    )
+    compiler_command = ",".join(linker_commands)
+    compiler_command = f"-Wl,{compiler_command}"
+
+    return compiler_command
+
+
+additional_compiler_flags = {
+    LLVMPass.BB_TAINT_TRACER: [
+        "-fsanitize=dataflow",
+        "-fno-sanitize-blacklist",
+        # For some obscure reason, when compiling bitcode -fsanitize-blacklist
+        # is ignored. Using the pass flags is thus necessary.
+        "-mllvm",
+        "-dfsan-abilist",
+        "-mllvm",
+        "@BB_TAINT_TRACER_ABILIST_PATH@",
+        get_ld_wrap_cmdline("@BB_TAINT_TRACER_DFSAN_RT_OVERRIDE@".split(";")),
+    ],
+    LLVMPass.INSTRUCTION_COUNT: [
+        "-pie",
+        "-fPIC",
+        "-mllvm",
+        "-ignore-default-blacklist",
+        "-mllvm",
+        "-icount-abilist",
+        "-mllvm",
+        "@INSTRUCTION_COUNT_ABILIST_PATH@",
+    ],
+    LLVMPass.INST_COUNT_WRAPPER: [
+        "-mllvm",
+        "-icount-abilist",
+        "-mllvm",
+        "@INST_COUNT_WRAPPER_ABILIST_PATH@",
+    ],
+    LLVMPass.INPUT_BYTES_TRACER: [
+        "-fsanitize=dataflow",
+        "-fno-sanitize-blacklist",
+        # For some obscure reason, when compiling bitcode -fsanitize-blacklist
+        # is ignored. Using the pass flags is thus necessary.
+        "-mllvm",
+        "-dfsan-abilist",
+        "-mllvm",
+        "@INPUT_BYTES_TRACER_ABILIST_PATH@",
+        get_ld_wrap_cmdline("@INPUT_BYTES_TRACER_DFSAN_RT_OVERRIDE@".split(";")),
+    ],
+}
+
+# These flags assume that *_libc++.a are installed in one of the link
+# directories, you can pass the correct one with -L in the compiler_flags
+additional_cxx_flags = {
+    LLVMPass.BB_TAINT_TRACER: [
+        "-stdlib=libc++",
+        "-l:dfsan_libc++.a",
+        "-l:dfsan_libc++abi.a",
+    ],
+    LLVMPass.INSTRUCTION_COUNT: [
+        "-stdlib=libc++",
+        "-l:icount_libc++.a",
+        "-l:icount_libc++abi.a",
+    ],
+    LLVMPass.EDGE_TRACER: ["-lc++", "-lc++abi"],
+    LLVMPass.CONDITION_TRACER: ["-lc++", "-lc++abi"],
+    LLVMPass.INPUT_BYTES_TRACER: [
+        "-stdlib=libc++",
+        "-l:dfsan_libc++.a",
+        "-l:dfsan_libc++abi.a",
+    ],
+}
+
+
+def parse_arguments():
+    parser = ArgumentParser()
+    parser.add_argument(
+        "output_dir",
+        type=Path,
+        help="directory in which binaries and analysis " + "files will be written",
+    )
+    parser.add_argument(
+        "input_bitcode", type=Path, help="LLVM bitcode of the program to be compiled"
+    )
+    parser.add_argument(
+        "--cxx", action="store_true", help="Treat the project as a C++ project"
+    )
+    parser.add_argument("--clang", default="clang", help="path to clang binary")
+    parser.add_argument("--opt", default="opt", help="path to opt binary")
+    parser.add_argument(
+        "-v", "--verbose", action="store_true", help="enable verbose output"
+    )
+    parser.add_argument("--custom-abilist", type=Path, help="path to abilist")
+    parser.add_argument(
+        "--disable", type=str, nargs="+", default=[], help="disable passes"
+    )
+    parser.add_argument(
+        "compiler_flags",
+        nargs=REMAINDER,
+        help="additional arguments to be passed to the "
+        + "compiler (ex. link commands)",
+    )
+
+    args = parser.parse_args()
+
+    if not args.input_bitcode.is_file():
+        print(f"Input bitcode file not found: {args.input_bitcode}")
+        exit(1)
+
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
+
+    return args
+
+
+def get_opt_passes_cmdline(pass_ids):
+    llvm_load_cmds = []
+    for pass_id in pass_ids:
+        llvm_load_cmds += ["-load", str(llvm_passes[pass_id])]
+
+    return llvm_load_cmds
+
+
+def get_passes_cmdline(pass_ids):
+    llvm_load_cmds = get_opt_passes_cmdline(pass_ids)
+
+    clang_cmdline = []
+
+    if "@ipo_supported@" == "YES" and (
+        LLVMPass.BB_TAINT_TRACER not in pass_ids
+        and LLVMPass.INSTRUCTION_COUNT not in pass_ids
+    ):  # IPO supported
+        clang_cmdline += ["-flto=thin", "-fuse-ld=gold"]
+
+    for llvm_load_cmd in llvm_load_cmds:
+        clang_cmdline += ["-Xclang", llvm_load_cmd]
+
+    return clang_cmdline
+
+
+def get_runtime_libs_cmdline(pass_ids):
+    clang_cmdline = []
+    for pass_id in pass_ids:
+        if pass_id in rt_libs:
+            lib_path, deps = rt_libs[pass_id]
+
+            clang_cmdline += lib_path
+            clang_cmdline += deps
+
+    return clang_cmdline
+
+
+def get_additional_compiler_flags(pass_ids):
+    clang_cmdline = []
+    for pass_id in pass_ids:
+        if pass_id in additional_compiler_flags:
+            clang_cmdline += additional_compiler_flags[pass_id]
+
+    return clang_cmdline
+
+
+def get_additional_cxx_flags(pass_ids):
+    clang_cmdline = []
+    for pass_id in pass_ids:
+        if pass_id in additional_cxx_flags:
+            clang_cmdline += additional_cxx_flags[pass_id]
+
+    return clang_cmdline
+
+
+def get_custom_abilist_flags(pass_ids, custom_abilist_path):
+    cmdline = []
+    for pass_id in pass_ids:
+        if pass_id in custom_abilist_flags:
+            cmdline += [custom_abilist_flags[pass_id], str(custom_abilist_path)]
+
+    clang_cmdline = []
+    for entry in cmdline:
+        clang_cmdline.append("-mllvm")
+        clang_cmdline.append(entry)
+
+    return clang_cmdline
+
+
+def build_instrumented_binary(
+    compiler,
+    pass_ids,
+    input_path,
+    output_path,
+    is_cxx,
+    custom_abilist_path,
+    cmdline_extra,
+):
+    instr_cmdline = [str(compiler)]
+    instr_cmdline += get_passes_cmdline(pass_ids)
+    instr_cmdline.append(str(input_path))
+    instr_cmdline += get_runtime_libs_cmdline(pass_ids)
+    instr_cmdline += ["-o", str(output_path)]
+    instr_cmdline += get_additional_compiler_flags(pass_ids)
+    if is_cxx:
+        instr_cmdline += get_additional_cxx_flags(pass_ids)
+    if custom_abilist_path is not None:
+        instr_cmdline += get_custom_abilist_flags(pass_ids, custom_abilist_path)
+    instr_cmdline += cmdline_extra
+
+    printable_cmdline = " ".join(instr_cmdline)
+    logging.info(f"Executing: {printable_cmdline}")
+
+    subprocess.run(instr_cmdline).check_returncode()
+
+    return output_path
+
+
+def run_static_analysis(opt, pass_name, pass_ids, input_path, output_path):
+    opt_cmdline = [str(opt)]
+    opt_cmdline.append("-analyze")
+    opt_cmdline += get_opt_passes_cmdline(pass_ids)
+    opt_cmdline.append("-" + pass_name)
+    opt_cmdline += ["-" + pass_name + "-output", str(output_path)]
+    opt_cmdline.append(str(input_path))
+
+    printable_cmdline = " ".join(opt_cmdline)
+    logging.info(f"Executing: {printable_cmdline}")
+
+    completed = subprocess.run(
+        opt_cmdline, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
+    )
+
+    completed.check_returncode()
+
+    return output_path
+
+
+def main():
+    args = parse_arguments()
+
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+
+    with futures.ThreadPoolExecutor() as executor:
+        to_do = []
+        for binary_suffix, deps in binary_to_deps.items():
+            if binary_suffix in args.disable:
+                continue
+
+            binary_name = args.input_bitcode.name[: -len(args.input_bitcode.suffix)]
+            binary_name += "_" + binary_suffix
+            output_path = args.output_dir / binary_name
+
+            future = executor.submit(
+                build_instrumented_binary,
+                args.clang,
+                deps,
+                args.input_bitcode,
+                output_path,
+                args.cxx,
+                args.custom_abilist,
+                args.compiler_flags,
+            )
+            to_do.append(future)
+
+        for pass_name, deps in static_to_deps.items():
+            output_name = args.input_bitcode.name[: -len(args.input_bitcode.suffix)]
+            output_name += "-" + pass_name
+            output_path = args.output_dir / output_name
+
+            future = executor.submit(
+                run_static_analysis,
+                args.opt,
+                pass_name,
+                deps,
+                args.input_bitcode,
+                output_path,
+            )
+            to_do.append(future)
+
+        for future in futures.as_completed(to_do):
+            try:
+                output_path = future.result()
+                print(f"Completed artifact: {output_path}")
+            except subprocess.CalledProcessError as e:
+                printable_cmd = " ".join(e.cmd)
+                print(f"Command was: {printable_cmd}")
+                exit(1)
+
+
+if __name__ == "__main__":
+    main()

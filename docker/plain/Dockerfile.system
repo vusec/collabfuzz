@@ -1,0 +1,8 @@
+FROM fuzzer-system
+
+ARG CC=clang
+ARG CXX=clang++
+
+USER root
+
+WORKDIR  /work

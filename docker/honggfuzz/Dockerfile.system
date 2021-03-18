@@ -1,0 +1,16 @@
+FROM fuzzer-system
+
+ARG CC=clang
+ARG CXX=clang++
+
+USER root
+
+WORKDIR  /work
+
+#RUN apt-get update && apt-get install -y llvm-9-runtime libclang-common-9-dev libclang-9-dev
+RUN apt-get update && apt-get install -y libblocksruntime-dev libunwind-dev
+# install Honggfuzz
+#RUN git clone https://github.com/google/honggfuzz.git && cd honggfuzz && make -j && ls && ./honggfuzz --help && make install
+RUN git clone --depth=1 --single-branch --branch 2.0_w_sync https://github.com/phi-go/honggfuzz.git && cd honggfuzz && make -j && make install && ls && ./honggfuzz --help
+
+COPY afl_converter.py .

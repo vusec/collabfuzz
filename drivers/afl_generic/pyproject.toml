@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+
+[tool.black]
+line-length = 88
+target-version = ['py37', 'py38']
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.mypy_cache
+  | \.tox
+  | build
+  | dist
+  | .*_pb2.py
+)/
+'''

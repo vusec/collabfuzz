@@ -1,0 +1,52 @@
+import lit.formats
+from pathlib import Path
+
+config.name = '@PROJECT_NAME@'
+config.test_format = lit.formats.ShTest(True)
+
+config.test_source_root = '@CMAKE_CURRENT_SOURCE_DIR@'
+config.suffixes = ['.ll', '.c', '.cpp']
+
+pass_path = Path('@PASS_PATH@')
+if not pass_path.is_file():
+    print(f'Pass not found: {pass_path}')
+    exit(1)
+
+idassigner_path = Path('@IDASSIGNER_PASS_PATH@')
+if not idassigner_path.is_file():
+    print(f'IDAssigner pass not found: {idassigner_path}')
+    exit(1)
+
+icount_path = Path('@ICOUNT_PASS_PATH@')
+if not icount_path.is_file():
+    print(f'InstructionCounter pass not found: {icount_path}')
+    exit(1)
+
+icount_rtlib_path = Path('@ICOUNT_RTLIB_PATH@')
+if not icount_rtlib_path.is_file():
+    print(f'InstructionCounter runtime library not found: {icount_rtlib_path}')
+    exit(1)
+
+rtlib_path = Path('@RTLIB_PATH@')
+if not rtlib_path.is_file():
+    print(f'Runtime library not found: {rtlib_path}')
+    exit(1)
+
+config.substitutions.append(
+    ('%opt_tracer', f'opt -load {idassigner_path} -load {pass_path}'))
+config.substitutions.append(
+    ('%clang_tracer', 'clang -pie -fno-discard-value-names -flto=thin ' +
+     f'-fuse-ld=gold -Xclang -load -Xclang {idassigner_path} ' +
+     f'-Xclang -load -Xclang {pass_path} -Xclang -load -Xclang {icount_path}'))
+config.substitutions.append(
+    ('%icount_abilist', '-mllvm -ignore-default-blacklist ' +
+     '-mllvm -icount-abilist -mllvm @ICOUNT_ABILIST_PATH@ ' +
+     '-mllvm -icount-abilist -mllvm @RTLIB_ABILIST_PATH@'))
+config.substitutions.append(('%rtlib_icount', str(icount_rtlib_path)))
+config.substitutions.append(
+    ('%rtlib_tracer',
+     f'-Wl,--whole-archive {rtlib_path} -Wl,--no-whole-archive'))
+config.substitutions.append(('%icount_rtdeps', '@ICOUNT_RTLIB_DEPS@'))
+config.substitutions.append(('%rtdeps', '@RTLIB_DEPS@'))
+config.substitutions.append(
+            ('%ld_path', f'LD_LIBRARY_PATH={rtlib_path.parent}'))

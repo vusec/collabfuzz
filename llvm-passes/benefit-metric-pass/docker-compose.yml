@@ -1,0 +1,9 @@
+version: '3.2'
+
+services:
+  bbid:
+    build: .
+    restart: always
+    container_name: bbid
+    volumes:
+      - $PWD:/work

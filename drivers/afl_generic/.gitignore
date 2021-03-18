@@ -1,0 +1,24 @@
+__pycache__
+pip-wheel-metadata
+
+# setuptools
+build
+dist
+*.egg-info
+*.eggs
+
+# protobuf
+*_pb2.py
+*_pb2.pyi
+
+# tox
+.tox
+
+# mypy
+.mypy_cache/
+
+# coverage
+.coverage
+
+# Visual Studio Code
+.vscode

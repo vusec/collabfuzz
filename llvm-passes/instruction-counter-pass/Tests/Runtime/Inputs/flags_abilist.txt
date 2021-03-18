@@ -1,0 +1,4 @@
+fun:f=uninstrumented
+
+fun:main=uninstrumented
+fun:main=discard

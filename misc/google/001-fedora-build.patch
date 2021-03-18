@@ -1,0 +1,126 @@
+diff --git a/boringssl-2016-02-12/build.sh b/boringssl-2016-02-12/build.sh
+index 1ffaa38..b1ea1a1 100755
+--- a/boringssl-2016-02-12/build.sh
++++ b/boringssl-2016-02-12/build.sh
+@@ -7,7 +7,7 @@
+ build_lib() {
+   rm -rf BUILD
+   cp -rf SRC BUILD
+-  (cd BUILD && cmake -DBUILD_SHARED_LIBS=OFF -DCMAKE_C_COMPILER="$CC" -DCMAKE_C_FLAGS="$CFLAGS -Wno-deprecated-declarations" -DCMAKE_CXX_COMPILER="$CXX" -DCMAKE_CXX_FLAGS="$CXXFLAGS -Wno-error=main" && make -j $JOBS)
++  (cd BUILD && cmake -DOPENSSL_NO_ASM=1 -DBUILD_SHARED_LIBS=OFF -DCMAKE_C_COMPILER="$CC" -DCMAKE_C_FLAGS="$CFLAGS -Wno-deprecated-declarations" -DCMAKE_CXX_COMPILER="$CXX" -DCMAKE_CXX_FLAGS="$CXXFLAGS -Wno-error=main" && make -j $JOBS)
+ }
+ 
+ get_git_revision https://github.com/google/boringssl.git  894a47df2423f0d2b6be57e6d90f2bea88213382 SRC
+diff --git a/json-2017-02-12/build.sh b/json-2017-02-12/build.sh
+index d78ba24..a8ab379 100755
+--- a/json-2017-02-12/build.sh
++++ b/json-2017-02-12/build.sh
+@@ -7,7 +7,7 @@
+ build_lib() {
+   rm -rf BUILD
+   cp -rf SRC BUILD
+-  (cd BUILD && make fuzzers -Ctest -j $JOBS)
++  (cd BUILD && CPPFLAGS=$CXXFLAGS make fuzzers -Ctest -j $JOBS)
+ }
+ 
+ get_git_revision https://github.com/nlohmann/json.git b04543ecc58188a593f8729db38c2c87abd90dc3 SRC
+diff --git a/libjpeg-turbo-07-2017/build.sh b/libjpeg-turbo-07-2017/build.sh
+index 3e2e06b..31945ca 100755
+--- a/libjpeg-turbo-07-2017/build.sh
++++ b/libjpeg-turbo-07-2017/build.sh
+@@ -7,7 +7,7 @@
+ build_lib() {
+   rm -rf BUILD
+   cp -rf SRC BUILD
+-  (cd BUILD && autoreconf -fiv && ./configure --disable-shared && make -j $JOBS)
++  (cd BUILD && autoreconf -fiv && ./configure --without-simd --disable-shared && make -j $JOBS)
+ }
+ 
+ get_git_revision https://github.com/libjpeg-turbo/libjpeg-turbo.git b0971e47d76fdb81270e93bbf11ff5558073350d SRC
+diff --git a/openssl-1.0.1f/build.sh b/openssl-1.0.1f/build.sh
+index 1f82b7e..71e2e81 100755
+--- a/openssl-1.0.1f/build.sh
++++ b/openssl-1.0.1f/build.sh
+@@ -8,7 +8,7 @@ build_lib() {
+   rm -rf BUILD
+   cp -rf SRC BUILD
+   # This version of openssl has unstable parallel make => Don't use `make -j `.
+-  (cd BUILD && CC="$CC $CFLAGS" ./config && make clean && make)
++  (cd BUILD && CC="$CC $CFLAGS" ./config -no-asm && make clean && make)
+ }
+ 
+ get_git_tag https://github.com/openssl/openssl.git OpenSSL_1_0_1f SRC
+@@ -19,6 +19,6 @@ if [[ $FUZZING_ENGINE == "hooks" ]]; then
+   # Link ASan runtime so we can hook memcmp et al.
+   LIB_FUZZING_ENGINE="$LIB_FUZZING_ENGINE -fsanitize=address"
+ fi
+-$CXX $CXXFLAGS $SCRIPT_DIR/target.cc -DCERT_PATH=\"$SCRIPT_DIR/\"  BUILD/libssl.a BUILD/libcrypto.a $LIB_FUZZING_ENGINE -I BUILD/include -o $EXECUTABLE_NAME_BASE
++$CXX $CXXFLAGS $SCRIPT_DIR/target.cc -DCERT_PATH=\"$SCRIPT_DIR/\"  BUILD/libssl.a BUILD/libcrypto.a $LIB_FUZZING_ENGINE -I BUILD/include -o $EXECUTABLE_NAME_BASE -ldl
+ rm -rf runtime
+ cp -rf $SCRIPT_DIR/runtime .
+diff --git a/openssl-1.0.2d/build.sh b/openssl-1.0.2d/build.sh
+index 6094fad..0202d88 100755
+--- a/openssl-1.0.2d/build.sh
++++ b/openssl-1.0.2d/build.sh
+@@ -7,7 +7,7 @@
+ build_lib() {
+   rm -rf BUILD
+   cp -rf SRC BUILD
+-  (cd BUILD && CC="$CC $CFLAGS" ./config && make clean && make -j $JOBS)
++  (cd BUILD && CC="$CC $CFLAGS" ./config -no-asm && make clean && make -j $JOBS)
+ }
+ 
+ get_git_tag https://github.com/openssl/openssl.git OpenSSL_1_0_2d SRC
+@@ -19,4 +19,4 @@ if [[ $FUZZING_ENGINE == "hooks" ]]; then
+   LIB_FUZZING_ENGINE="$LIB_FUZZING_ENGINE -fsanitize=address"
+ fi
+ set -x
+-$CXX $CXXFLAGS $SCRIPT_DIR/target.cc -DCERT_PATH=\"$SCRIPT_DIR/\"  BUILD/libssl.a BUILD/libcrypto.a $LIB_FUZZING_ENGINE -lgcrypt -I BUILD/include -o $EXECUTABLE_NAME_BASE
++$CXX $CXXFLAGS $SCRIPT_DIR/target.cc -DCERT_PATH=\"$SCRIPT_DIR/\"  BUILD/libssl.a BUILD/libcrypto.a $LIB_FUZZING_ENGINE -lgcrypt -I BUILD/include -o $EXECUTABLE_NAME_BASE -ldl
+diff --git a/openssl-1.1.0c/build.sh b/openssl-1.1.0c/build.sh
+index 49818fd..ce1ece2 100755
+--- a/openssl-1.1.0c/build.sh
++++ b/openssl-1.1.0c/build.sh
+@@ -7,7 +7,17 @@
+ build_lib() {
+   rm -rf BUILD
+   cp -rf SRC BUILD
+-  (cd BUILD && CC="$CC $CFLAGS" ./config && make clean && make -j $JOBS)
++  (
++        cd BUILD &&
++        sed -i "s#'File::Glob' => qw/glob/;#'File::Glob' => qw/bsd_glob/;#g" test/recipes/90-test_fuzz.t &&
++        sed -i "s#'File::Glob' => qw/glob/;#'File::Glob' => qw/bsd_glob/;#g" test/recipes/80-test_ssl_new.t &&
++        sed -i "s#'File::Glob' => qw/glob/;#'File::Glob' => qw/bsd_glob/;#g" test/recipes/40-test_rehash.t &&
++        sed -i "s#'File::Glob' => qw/glob/;#'File::Glob' => qw/bsd_glob/;#g" test/build.info &&
++        sed -i "s#'File::Glob' => qw/glob/;#'File::Glob' => qw/bsd_glob/;#g" test/run_tests.pl &&
++        sed -i "s#'File::Glob' => qw/glob/;#'File::Glob' => qw/bsd_glob/;#g" util/process_docs.pl &&
++        sed -i "s#'File::Glob' => qw/glob/;#'File::Glob' => qw/bsd_glob/;#g" Configure
++  )
++  (cd BUILD && CC="$CC $CFLAGS" ./config -no-asm && make clean && make -j $JOBS)
+ }
+ 
+ get_git_tag https://github.com/openssl/openssl.git OpenSSL_1_1_0c SRC
+@@ -21,5 +31,5 @@ fi
+ set -x
+ for f in bignum x509; do
+   $CC $CFLAGS -DFuzzerTestOneInput=LLVMFuzzerTestOneInput -c -g BUILD/fuzz/$f.c -I BUILD/include
+-  $CXX $CXXFLAGS $f.o BUILD/libssl.a BUILD/libcrypto.a $LIB_FUZZING_ENGINE -lgcrypt -o $EXECUTABLE_NAME_BASE-$f
++  $CXX $CXXFLAGS $f.o BUILD/libssl.a BUILD/libcrypto.a $LIB_FUZZING_ENGINE -lgcrypt -ldl -lpthread -o $EXECUTABLE_NAME_BASE-$f
+ done
+diff --git a/wpantund-2018-02-27/build.sh b/wpantund-2018-02-27/build.sh
+index 52284d0..37faa53 100755
+--- a/wpantund-2018-02-27/build.sh
++++ b/wpantund-2018-02-27/build.sh
+@@ -15,10 +15,11 @@ build_lib() {
+     # Link ASan runtime so we can hook memcmp et al.
+     LIB_FUZZING_ENGINE="$LIB_FUZZING_ENGINE -fsanitize=address"
+   fi
+-  (cd BUILD && ./bootstrap.sh && ./configure \
++  (cd BUILD &&  autoreconf --verbose --force --install 2> /dev/null && (for file in $(find . -type f); do sed -e s/@CODE_COVERAGE_RULES@//g -i $file; done) && ./configure \
+     --enable-fuzz-targets             \
+     --disable-shared                  \
+     --enable-static                   \
++    --disable-dependency-tracking     \
+     CC="${CC}"                        \
+     CXX="${CXX}"                      \
+     FUZZ_LIBS="${LIB_FUZZING_ENGINE}" \

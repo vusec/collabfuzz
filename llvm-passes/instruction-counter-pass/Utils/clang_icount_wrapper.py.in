@@ -1,0 +1,111 @@
+#!/usr/bin/env python3
+from pathlib import Path
+import sys
+import subprocess
+import os
+
+C_SCRIPT = '@SYMLINK_NAME@'
+CXX_SCRIPT = '@SYMLINK_NAME@++'
+
+C_COMPILER = 'clang'
+CXX_COMPILER = 'clang++'
+
+PASS_PATH = '@PASS_PATH@'
+RTLIB_PATH = '@RTLIB_PATH@'
+RTLIB_DEPS = '@RTLIB_DEPS@'
+ABILIST_PATH = '@ABILIST_PATH@'
+
+CLANG_FLAGS = [
+    '-pie',
+    '-fPIC',
+    '-mllvm',
+    '-ignore-default-blacklist',
+    '-mllvm',
+    '-icount-abilist',
+    '-mllvm',
+    ABILIST_PATH,
+]
+
+
+def check_config():
+    pass_path = Path(PASS_PATH)
+    if not pass_path.is_file():
+        print(f'Pass not found: {pass_path}')
+        exit(1)
+
+    rtlib_path = Path(RTLIB_PATH)
+    if not rtlib_path.is_file():
+        print(f'Runtime library not found: {rtlib_path}')
+        exit(1)
+
+    return (pass_path, rtlib_path)
+
+
+def build_xclang_command(flags):
+    xclang_flags = []
+    for flag in flags:
+        xclang_flags += ['-Xclang', flag]
+    return xclang_flags
+
+
+def build_load_pass_flags(pass_path):
+    return build_xclang_command(f'-load {pass_path}'.split())
+
+
+def main():
+    pass_path, rtlib_path = check_config()
+
+    # Choose compiler according to the symlink used. No other name is allowed.
+    script_name = Path(sys.argv[0]).name
+    if script_name == C_SCRIPT:
+        cmdline = [C_COMPILER]
+    elif script_name == CXX_SCRIPT:
+        cmdline = [CXX_COMPILER]
+    else:
+        print('Usage: [%s|%s] ...' % (C_SCRIPT, CXX_SCRIPT))
+        exit(1)
+
+    if 'ICOUNT_WRAPPER_FORWARD' not in os.environ:
+        # Make the compiler load the custom pass
+        cmdline += build_load_pass_flags(pass_path)
+
+        # Enable LTO if supported
+        if ('@ipo_supported@' == 'YES'
+                and 'ICOUNT_WRAPPER_ENABLE_LTO' in os.environ):
+            cmdline += ['-flto=thin', '-fuse-ld=gold']
+        elif 'ICOUNT_WRAPPER_ENABLE_LTO' in os.environ:
+            print('LTO not supported')
+
+        # Add pass specific flags
+        cmdline += CLANG_FLAGS
+
+        # Ignore unused arguments in the command line
+        cmdline.append('-Qunused-arguments')
+
+        # Insert command line arguments provided to the wrapper
+        cmdline += sys.argv[1:]
+
+        # Avoid adding linking flags when not linking
+        args_set = set(sys.argv[1:])
+        if not args_set.intersection(['-c', '-S', '-E']):
+            if '-x' in args_set:
+                cmdline += ['-x', 'none']
+
+            cmdline.append('%s' % rtlib_path)
+            cmdline += RTLIB_DEPS.split()
+
+            # The runtime library cannot be put in a shared library
+            if '-shared' in args_set:
+                print('WARNING: This wrapper cannot be used to build shared ' +
+                      'libraries!',
+                      file=sys.stderr)
+    else:
+        # Only append arguments provided to the wrapper
+        cmdline += sys.argv[1:]
+
+    completed_process = subprocess.run(cmdline)
+    exit(completed_process.returncode)
+
+
+if __name__ == '__main__':
+    main()

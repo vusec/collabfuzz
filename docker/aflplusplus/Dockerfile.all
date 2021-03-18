@@ -1,0 +1,18 @@
+FROM ubuntu:18.04
+RUN apt-get update && apt-get install -y build-essential python2.7-dev python3.7-dev
+WORKDIR /work
+RUN useradd -ms /bin/bash coll
+COPY --from=fuzzer-system:aflplusplus --chown=coll:coll /work /work
+RUN cd AFLplusplus && make install
+RUN rm -rf /work
+ENV DEBIAN_FRONTEND=noninteractive
+
+
+COPY --from=fuzzer-aflplusplus:binutils --chown=coll:coll /targets/aflplusplus-binutils /targets/binutils
+COPY --from=fuzzer-aflplusplus:lava --chown=coll:coll /targets/aflplusplus-lava /targets/lava
+RUN apt-get update && apt-get install -y libarchive-dev libglib2.0 libgss3
+COPY --from=fuzzer-aflplusplus:google --chown=coll:coll /targets/aflplusplus-google /targets/google
+
+WORKDIR /home/coll
+USER coll
+

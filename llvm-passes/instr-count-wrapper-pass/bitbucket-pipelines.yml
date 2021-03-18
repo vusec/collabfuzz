@@ -1,0 +1,41 @@
+image: fedora:31
+
+pipelines:
+    default:
+        - step:
+            caches:
+                - dnf
+            script:
+                - dnf install --refresh --assumeyes
+                    clang llvm-devel cmake make gcc-c++ boost-static
+                    python3-lit git openssh rust cargo
+                - sed --in-place=.orig
+                      's/if (ARG_SHARED)/if (ARG_SHARED OR ARG_MODULE)/'
+                      /usr/lib64/cmake/llvm/AddLLVM.cmake
+                - git submodule update --init --recursive
+                - git clone git@bitbucket.org:vusec/id-assigner-pass.git
+                            /tmp/id-assigner-pass
+                - mkdir /tmp/id-assigner-build
+                - cd /tmp/id-assigner-build
+                - cmake -DCMAKE_BUILD_TYPE=Debug
+                        -DCMAKE_INSTALL_PREFIX=/tmp/install_prefix
+                        /tmp/id-assigner-pass
+                - make install
+                - git clone git@bitbucket.org:vusec/instruction-counter-pass.git
+                            /tmp/instruction-counter-pass
+                - mkdir /tmp/instruction-counter-build
+                - cd /tmp/instruction-counter-build
+                - cmake -DCMAKE_BUILD_TYPE=Debug
+                        -DCMAKE_INSTALL_PREFIX=/tmp/install_prefix
+                        /tmp/instruction-counter-pass
+                - make install
+                - mkdir /tmp/build
+                - cd /tmp/build
+                - cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON
+                        -DCMAKE_INSTALL_PREFIX=/tmp/install_prefix
+                        $BITBUCKET_CLONE_DIR
+                - make check
+
+definitions:
+    caches:
+        dnf: /var/cache/dnf

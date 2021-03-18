@@ -1,0 +1,12 @@
+FROM fuzzer-system:plain
+
+ENV CC=clang
+ENV CXX=clang++
+
+# build binutils 
+WORKDIR  /work
+RUN mkdir -p /targets/binutils
+
+RUN wget https://ftp.gnu.org/gnu/binutils/binutils-2.31.1.tar.gz && tar xfv binutils-2.31.1.tar.gz
+
+RUN cd binutils-2.31.1/ && ./configure --prefix=/targets/binutils/ && make -j && make install

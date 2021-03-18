@@ -1,0 +1,42 @@
+--- 
+targets: 
+  - 
+    binary: base64
+    name: base64
+    input: ./inputs/lava-m/base64
+  - 
+    binary: md5sum
+    name: md5sum
+    input: ./inputs/lava-m/md5sum
+  - 
+    binary: uniq
+    name: uniq
+    input: ./inputs/lava-m/uniq
+  - 
+    binary: who
+    name: who
+    input: ./inputs/lava-m/who
+
+experiment: 
+  name: "EnFuzz-Q baseline"
+  timeout: 86400
+  repeat: 10
+  output: ./out/enfuzz-q_baseline
+  use_collab: false
+fuzzers: 
+  - 
+    name: afl
+    type: afl
+    parallel: 4
+  - 
+    name: aflfast
+    type: afl
+    parallel: 4
+  - 
+    name: fairfuzz
+    type: afl
+    parallel: 4
+  - 
+    name: qsym
+    type: qsym
+    parallel: 4

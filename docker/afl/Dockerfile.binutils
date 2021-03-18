@@ -1,0 +1,12 @@
+FROM fuzzer-system:afl
+
+ENV CC=afl-clang-fast
+ENV CXX=afl-clang-fast++
+
+# build binutils 
+WORKDIR  /work
+RUN mkdir -p /targets/afl-binutils
+
+RUN wget https://ftp.gnu.org/gnu/binutils/binutils-2.31.1.tar.gz && tar xfv binutils-2.31.1.tar.gz
+
+RUN cd binutils-2.31.1/ && ./configure --prefix=/targets/afl-binutils/ && make -j`nproc` && make install

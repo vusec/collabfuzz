@@ -1,0 +1,19 @@
+FROM fuzzer-system:libfuzzer
+
+USER root
+WORKDIR /work
+
+RUN apt-get update && apt-get install -y python2.7-dev python3.7-dev libpixman-1-dev
+
+ENV CC=clang
+ENV CXX=clang++
+
+# build fuzzer-test-suite
+RUN git clone https://github.com/google/fuzzer-test-suite.git && cd fuzzer-test-suite # && git checkout b2e885706d6
+COPY --chown=coll:coll build.sh fuzzer-test-suite/build.sh
+RUN mkdir build-test-suite
+COPY --chown=coll:coll build_fuzzer_test_suite.py build-test-suite/build_fuzzer_test_suite.py
+RUN cd build-test-suite  && python3 build_fuzzer_test_suite.py parallel
+RUN mkdir /targets/google
+RUN apt-get update && apt-get install -y rsync
+RUN rsync -avr --exclude=RUNDIR-*/BUILD --exclude=RUNDIR-*/SRC build-test-suite/RUNDIR-* /targets/google

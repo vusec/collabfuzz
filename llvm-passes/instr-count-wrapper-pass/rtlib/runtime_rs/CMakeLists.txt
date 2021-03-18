@@ -1,0 +1,1 @@
+cargo_build(NAME inst_count_wrapper_runtime_rs)

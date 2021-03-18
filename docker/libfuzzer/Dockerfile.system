@@ -1,0 +1,14 @@
+FROM fuzzer-system
+
+USER root
+WORKDIR /work
+
+RUN apt-get update && apt-get install -y python2.7-dev python3.7-dev libpixman-1-dev
+
+ENV CC=clang
+ENV CXX=clang++
+
+# build fuzzer-test-suite
+WORKDIR /work/llvm-project
+RUN wget http://releases.llvm.org/9.0.0/compiler-rt-9.0.0.src.tar.xz -O compiler-rt.tar.xz && ls -lah && tar xfv compiler-rt.tar.xz && mv compiler-rt-9.0.0.src compiler-rt
+WORKDIR  /work

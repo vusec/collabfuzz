@@ -1,0 +1,22 @@
+--- 
+targets: 
+  - 
+    binary: base64
+    name: base64
+    input: ./inputs/lava-m/base64
+  - 
+    binary: who
+    name: who
+    input: ./inputs/lava-m/who
+
+experiment: 
+  name: "test_run"
+  timeout: 10
+  repeat: 10
+  output: ./out/test
+  use_collab: true
+fuzzers: 
+  - 
+    name: afl
+    type: afl
+    parallel: 2

@@ -1,0 +1,5 @@
+.ipynb_checkpoints
+*.tar.gz
+*.zip
+*.pdf
+*.png

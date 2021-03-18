@@ -1,0 +1,15 @@
+FROM fuzzer-system
+
+ARG CC=clang
+ARG CXX=clang++
+
+USER root
+
+WORKDIR  /work
+
+RUN apt-get update && apt-get install -y python2.7-dev
+
+
+# install AFL
+RUN wget -O afl-2.56b.tar.gz https://github.com/google/AFL/archive/v2.56b.tar.gz && tar xfv afl-2.56b.tar.gz && mv AFL-2.56b afl && cd afl &&  make -j`nproc` CC=$CC CXX=$CXX && cd llvm_mode && make -j`nproc` && cd ../ && ls && ./afl-clang --version && make install
+

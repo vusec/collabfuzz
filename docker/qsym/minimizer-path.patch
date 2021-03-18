@@ -1,0 +1,13 @@
+diff --git a/qsym/minimizer.py b/qsym/minimizer.py
+index 19adad4..3839350 100755
+--- a/qsym/minimizer.py
++++ b/qsym/minimizer.py
+@@ -61,7 +61,7 @@ class TestcaseMinimizer(object):
+ 
+         cmd, stdin = utils.fix_at_file(cmd, testcase)
+         with open(os.devnull, "wb") as devnull:
+-            proc = sp.Popen(cmd, stdin=sp.PIPE, stdout=devnull, stderr=devnull)
++            proc = sp.Popen(cmd, stdin=sp.PIPE, stdout=devnull, stderr=devnull, env=os.environ)
+             proc.communicate(stdin)
+ 
+         this_bitmap = read_bitmap_file(self.temp_file)

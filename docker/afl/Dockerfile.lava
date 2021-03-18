@@ -1,0 +1,12 @@
+FROM fuzzer-system:afl
+
+ENV CC=afl-clang-fast
+ENV CXX=afl-clang-fast++
+
+# build LAVA-M
+WORKDIR  /work
+RUN mkdir -p /targets/afl-lava
+RUN wget http://panda.moyix.net/~moyix/lava_corpus.tar.xz && tar xfv lava_corpus.tar.xz
+COPY build_lava.sh build_lava.sh
+COPY coreutils-8.24-on-glibc-2.28.patch coreutils-8.24-on-glibc-2.28.patch
+RUN FORCE_UNSAFE_CONFIGURE=1 ./build_lava.sh

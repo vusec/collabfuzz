@@ -1,0 +1,56 @@
+import lit.formats
+from os import path
+
+config.name = 'InstructionCounter'
+config.test_format = lit.formats.ShTest(True)
+
+config.test_source_root = '@CMAKE_CURRENT_SOURCE_DIR@'
+config.suffixes = ['.ll', '.c', '.cc']
+config.clang = 'clang'
+config.clangxx = 'clang++'
+config.opt = 'opt'
+
+build_path = '@PROJECT_BINARY_DIR@'
+
+shared_suffix = '@CMAKE_SHARED_LIBRARY_SUFFIX@'
+pass_path = path.join(build_path, 'Pass',
+                      ('LLVMInstructionCounter' + shared_suffix))
+if not path.isfile(pass_path):
+    print('File not found: %s' % pass_path)
+    exit(1)
+config.substitutions.append(
+    ('%clang_icount',
+     '%s -Xclang -load -Xclang %s -fPIE -mllvm -ignore-default-blacklist' %
+     (config.clang, pass_path)))
+config.substitutions.append(
+    ('%clangxx_icount',
+     '%s -Xclang -load -Xclang %s -fPIE -mllvm -ignore-default-blacklist' %
+     (config.clangxx, pass_path)))
+config.substitutions.append(
+    ('%opt_icount',
+     '%s -load %s -icount -ignore-default-blacklist' % (config.opt, pass_path)))
+
+static_suffix = '@CMAKE_STATIC_LIBRARY_SUFFIX@'
+# FIXME: Generate path dynamically
+runtime_path = path.join(build_path, 'Runtime', 'lib', 'linux',
+                         ('libclang_rt.icount-x86_64' + static_suffix))
+if not path.isfile(runtime_path):
+    print('File not found: %s' % runtime_path)
+    exit(1)
+runtime_deps = '@RTLIB_DEPS@'
+config.substitutions.append(('%runtime_lib',
+                             '-pie %s %s' % (runtime_path, runtime_deps)))
+
+blacklist_path = path.join(build_path, 'Runtime', 'share',
+                           'icount_abilist.txt')
+if not path.isfile(blacklist_path):
+    print('File not found: %s' % blacklist_path)
+    exit(1)
+config.substitutions.append(
+    ('%load_blacklist', '-mllvm -icount-abilist -mllvm %s' % blacklist_path))
+
+include_path = path.join(build_path, 'Runtime', 'include')
+if not path.isdir(include_path):
+    print('Directory not found: %s' % include_path)
+    exit(1)
+config.substitutions.append(('%include_path', '-I%s' % include_path))

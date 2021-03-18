@@ -1,0 +1,24 @@
+FROM fuzzer-system:qsym
+RUN apt-get update && apt-get install -y build-essential libacl1-dev
+
+# Google fuzzer-test-suite deps
+RUN apt-get update && apt-get install -y libarchive-dev libglib2.0 libgss3 libssl-dev
+
+WORKDIR /work
+RUN useradd -ms /bin/bash coll
+WORKDIR /home/coll
+#RUN cp -r /work/qsym/qsym-base /home/coll/qsym
+RUN cp -r /work/qsym/qsym-base /qsym
+RUN rm -rf /work
+
+RUN mkdir /targets
+RUN mkdir /targets-plain
+COPY --from=fuzzer-afl --chown=coll:coll /targets /targets
+COPY --from=fuzzer-plain --chown=coll:coll /targets /targets-plain
+COPY --from=fuzzer-qsym:google --chown=coll:coll /targets/google /targets/google
+COPY --from=fuzzer-qsym:google --chown=coll:coll /targets-plain/google /targets-plain/google
+
+
+
+USER coll
+

@@ -1,0 +1,8 @@
+fun:icount_get_shadow=uninstrumented
+fun:icount_get_shadow=custom
+
+fun:k2=uninstrumented
+fun:k2=custom
+
+fun:k4=uninstrumented
+fun:k4=custom

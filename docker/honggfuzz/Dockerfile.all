@@ -1,0 +1,19 @@
+FROM ubuntu:18.04
+RUN apt-get update && apt-get install -y build-essential libunwind-dev libipt-dev libblocksruntime-dev
+WORKDIR /work
+RUN useradd -ms /bin/bash coll
+COPY --from=fuzzer-system:honggfuzz --chown=coll:coll /work /work
+RUN cd honggfuzz && make install
+RUN rm -rf /work
+ENV DEBIAN_FRONTEND=noninteractive
+
+
+COPY --from=fuzzer-honggfuzz:binutils --chown=coll:coll /targets/honggfuzz-binutils /targets/binutils
+COPY --from=fuzzer-honggfuzz:lava --chown=coll:coll /targets/honggfuzz-lava /targets/lava
+RUN apt-get update && apt-get install -y libarchive-dev libglib2.0 libgss3
+COPY --from=fuzzer-honggfuzz:google --chown=coll:coll /targets/honggfuzz-google /targets/google
+
+WORKDIR /home/coll
+USER coll
+
+COPY afl_converter.py .

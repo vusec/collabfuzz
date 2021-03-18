@@ -1,0 +1,4 @@
+{
+	"pyls.configurationSources": ["flake8"],
+	"pyls.plugins.pyls_mypy.live_mode": false
+}

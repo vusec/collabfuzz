@@ -1,0 +1,49 @@
+from pathlib import Path
+from statistics import mean, stdev
+import time
+import subprocess
+
+from tqdm import trange
+
+EXECUTABLE_PATH = Path('@CMAKE_CURRENT_BINARY_DIR@/@PROG_INSTR@')
+EXECUTABLE_ARGS = '@PROG_ARGS@'.split(';')
+TRACE_PATH = Path('@CMAKE_CURRENT_BINARY_DIR@/trace_@PROG_NAME@.csv')
+
+
+def benchmark(cmdline, env):
+    times = []
+    for _ in trange(50):
+        begin = time.monotonic()
+        subprocess.run(cmdline, stdout=subprocess.DEVNULL, env=env)
+        end = time.monotonic()
+        times.append(end - begin)
+
+    return mean(times), stdev(times)
+
+
+def main():
+    if not EXECUTABLE_PATH.is_file():
+        print(f'Executable does not exist: {EXECUTABLE_PATH}')
+        exit(1)
+
+    cmdline = [str(EXECUTABLE_PATH)] + EXECUTABLE_ARGS
+
+    print(f'Running {EXECUTABLE_PATH.name} with trace:')
+    mean_trace, std_trace = benchmark(cmdline,
+                                      env={
+                                          'TRACER_ENABLE_FILE_OUTPUT': '1',
+                                          'TRACER_OUTPUT_FILE': TRACE_PATH
+                                      })
+
+    print(f'Running {EXECUTABLE_PATH.name} without trace:')
+    mean_notrace, std_notrace = benchmark(cmdline, None)
+
+    print('Means (s):  {:.6f}, {:.6f}'.format(mean_trace, mean_notrace))
+    print('Stdevs (s): {:.6f}, {:.6f}'.format(std_trace, std_notrace))
+
+    overhead = mean_trace / mean_notrace - 1
+    print('Overhead on average: {:.2f}%'.format(overhead * 100))
+
+
+if __name__ == '__main__':
+    main()

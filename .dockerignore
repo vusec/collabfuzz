@@ -1,0 +1,10 @@
+*
+.git
+!framework
+!llvm-passes
+!build_lava.sh
+!build_binutils.sh
+!misc
+!drivers/afl_generic
+!docker/server
+framework/target

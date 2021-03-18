@@ -1,0 +1,14 @@
+__pycache__
+pip-wheel-metadata
+
+# Setuptools
+build
+dist
+*.egg-info
+*.eggs
+
+# Protobuf
+*_pb2.py
+
+# Tox
+.tox

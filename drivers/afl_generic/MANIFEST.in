@@ -1,0 +1,2 @@
+include protos/*.proto
+recursive-exclude src/collabfuzz_generic_driver *_pb2.py*

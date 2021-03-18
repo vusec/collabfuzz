@@ -1,0 +1,18 @@
+FROM fuzzer-system:honggfuzz
+
+ENV CC=clang
+ENV CXX=clang++
+
+WORKDIR  /work
+# build fuzzer-test-suite
+RUN wget http://releases.llvm.org/9.0.0/compiler-rt-9.0.0.src.tar.xz -O compiler-rt.tar.xz && ls -lah && tar xfv compiler-rt.tar.xz
+RUN git clone https://github.com/google/fuzzer-test-suite.git && cd fuzzer-test-suite && git checkout b2e885706d6
+COPY --chown=coll:coll build.sh fuzzer-test-suite/build.sh
+RUN mkdir build-test-suite
+COPY --chown=coll:coll build_fuzzer_test_suite.py build-test-suite/build_fuzzer_test_suite.py
+RUN cd build-test-suite && python build_fuzzer_test_suite.py
+RUN mkdir /targets/honggfuzz-google
+#RUN find . -name "*-honggfuzz" -executable | xargs cp -t  /targets/honggfuzz-google/
+#RUN cp -r build-test-suite/RUNDIR-*/seeds /inputs/google
+RUN apt-get update && apt-get install -y rsync
+RUN rsync -avr --exclude=RUNDIR-*/BUILD --exclude=RUNDIR-*/SRC build-test-suite/RUNDIR-* /targets/honggfuzz-google

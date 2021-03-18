@@ -1,0 +1,42 @@
+--- 
+targets: 
+  - 
+    binary: base64
+    name: base64
+    input: ./inputs/base64
+  - 
+    binary: md5sum
+    name: md5sum
+    input: ./inputs/md5sum
+  - 
+    binary: uniq
+    name: uniq
+    input: ./inputs/uniq
+  - 
+    binary: who
+    name: who
+    input: ./inputs/who
+
+experiment: 
+  name: "EnFuzz-Q"
+  timeout: 86400
+  repeat: 10
+  use_collab: true
+  scheduler: "enfuzz"
+fuzzers: 
+  - 
+    name: afl
+    type: afl
+    parallel: 1
+  - 
+    name: aflfast
+    type: afl
+    parallel: 1
+  - 
+    name: fairfuzz
+    type: afl
+    parallel: 1
+  - 
+    name: qsym
+    type: qsym
+    parallel: 1
