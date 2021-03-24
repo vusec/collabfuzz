@@ -1,9 +1,11 @@
-FROM ubuntu:16.04
+FROM ubuntu:18.04
 #FROM fuzzer-system
 
 USER root
 
-RUN apt-get update && apt-get install -y git build-essential wget clang python
+RUN apt-get update && apt-get install -y git build-essential wget clang python python-pip gcc-4.8-multilib g++-4.8-multilib
+RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 10
+RUN update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 10
 
 RUN mkdir -p /work/qsym
 WORKDIR /work/qsym
@@ -15,7 +17,7 @@ RUN git apply ../minimizer-path.patch
 
 COPY setup.sh /work/qsym/qsym-base/setup.sh
 RUN ./setup.sh
-RUN pip install --upgrade pip 
+#RUN pip install --upgrade pip 
 RUN pip install "pytest<5"
 RUN pip install . --upgrade
 RUN cd tests/; python build.py

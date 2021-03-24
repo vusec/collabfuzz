@@ -1,4 +1,5 @@
 FROM fuzzer-system:qsym
+ENV DEBIAN_FRONTEND="noninteractive"
 RUN apt-get update && apt-get install -y build-essential libacl1-dev
 
 # Google fuzzer-test-suite deps
