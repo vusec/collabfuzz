@@ -8,8 +8,9 @@ index 4aac8cf..1340967 100644
  build_afl() {
 -  $CC $CFLAGS -c -w $AFL_SRC/llvm_mode/afl-llvm-rt.o.c
 -  $CXX $CXXFLAGS -std=c++11 -O2 -c ${LIBFUZZER_SRC}/afl/afl_driver.cpp -I$LIBFUZZER_SRC
-+  $CC $CFLAGS -c -w $AFL_SRC/llvm_mode/afl-llvm-rt.o.c -I$AFL_SRC/include
+-  ar r $LIB_FUZZING_ENGINE afl_driver.o afl-llvm-rt.o.o
++  cp $AFL_SRC/afl-llvm-rt-64.o ./afl-llvm-rt.o.o
 +  $CXX $CXXFLAGS -std=c++11 -O2 -c ${LIBFUZZER_SRC}/afl/afl_driver.cpp -I$LIBFUZZER_SRC 
-   ar r $LIB_FUZZING_ENGINE afl_driver.o afl-llvm-rt.o.o
++  ar r $LIB_FUZZING_ENGINE afl_driver.o afl-llvm-rt.o.o
    rm *.o
  }
