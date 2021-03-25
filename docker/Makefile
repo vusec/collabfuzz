@@ -3,7 +3,7 @@
 DOCKER_FLAGS ?= 
 REMOTE_REGISTRY ?= sarek.osterlund.xyz
 
-all: fuzzer-afl fuzzer-aflfast  fuzzer-fairfuzz fuzzer-honggfuzz fuzzer-radamsa # fuzzer-qsym fuzzer-libfuzzer
+all: fuzzer-afl fuzzer-aflfast  fuzzer-fairfuzz fuzzer-honggfuzz fuzzer-radamsa fuzzer-qsym fuzzer-libfuzzer
 
 rebuild: DOCKER_FLAGS = --no-cache
 rebuild: all

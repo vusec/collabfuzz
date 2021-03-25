@@ -218,7 +218,7 @@ RUN dnf install -y --refresh \
         libarchive-devel glib2-devel libxml2-devel libgcrypt-devel \
         openssl-devel zlib-devel bzip2-devel xz-devel \
         libvorbis-devel libogg-devel ragel-devel nasm \
-        autoconf-archive dbus-devel readline-devel lcov
+        autoconf-archive dbus-devel readline-devel lcov subversion
 COPY --from=gss-build /work/gss /work/gss
 RUN cd /work/gss && make install
 COPY --from=google-src /work/fuzzer-test-suite /work/fuzzer-test-suite

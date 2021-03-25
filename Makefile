@@ -7,7 +7,7 @@ all: submodules framework docker tools
 docker:
 	$(MAKE) -C docker
 
-framework: framework-binutils framework-lava framework-google
+framework: framework-binutils framework-google # framework-lava 
 
 framework-binutils:
 	DOCKER_BUILDKIT=1 docker build --target=framework-binutils --tag=fuzzer-framework-binutils .

@@ -15,5 +15,5 @@ fuzzer-aflplusplus-lava: fuzzer-system-aflplusplus
 fuzzer-aflplusplus-google: fuzzer-system-aflplusplus
 	docker build -t fuzzer-aflplusplus:google -f Dockerfile.google .
 
-fuzzer-aflplusplus: fuzzer-aflplusplus-binutils # fuzzer-aflplusplus-lava fuzzer-aflplusplus-google
+fuzzer-aflplusplus: fuzzer-aflplusplus-binutils #fuzzer-aflplusplus-lava fuzzer-aflplusplus-google
 	docker build -t fuzzer-aflplusplus -f Dockerfile.all .
