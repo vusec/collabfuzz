@@ -125,3 +125,18 @@ And then try to start the campaign:
 To clean up the campaign after exiting (i.e., delete the volumes):
 ```docker-compose down -v```
 
+# Cite
+
+CollabFuzz was presented at EuroSec 2021. [CollabFuzz: A Framework for Collaborative Fuzzing](https://download.vusec.net/papers/collabfuzz_eurosec21.pdf).
+
+Bibtex:
+
+```bibtex
+@inproceedings{eurosec_collabfuzz_2021,
+	title = {{CollabFuzz}: {A} {Framework} for {Collaborative} {Fuzzing}},
+	booktitle = {{EuroSec}},
+	author = {Österlund, Sebastian and Geretto, Elia and Jemmett, Andrea and Güler, Emre and Görz, Philipp and Holz, Thorsten and Giuffrida, Cristiano and Bos, Herbert},
+	month = apr,
+	year = {2021},
+}
+```
