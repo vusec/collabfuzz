@@ -129,6 +129,8 @@ To clean up the campaign after exiting (i.e., delete the volumes):
 
 CollabFuzz was presented at EuroSec 2021. [CollabFuzz: A Framework for Collaborative Fuzzing](https://download.vusec.net/papers/collabfuzz_eurosec21.pdf).
 
+Video: [available on YouTube](https://www.youtube.com/watch?v=nf63VmIhWJQ)
+
 Bibtex:
 
 ```bibtex
