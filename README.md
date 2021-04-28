@@ -142,3 +142,6 @@ Bibtex:
 	year = {2021},
 }
 ```
+
+# Related work
+If you are interested in collaborative fuzzing, also check out our work on how to select the right set of fuzzers to use in a collaborative setting: [Cupid: Automatic Fuzzer Selection for Collaborative Fuzzing](https://www.ei.ruhr-uni-bochum.de/media/emma/veroeffentlichungen/2020/09/26/ACSAC20-Cupid_TiM9H07.pdf). Code: https://github.com/RUB-SysSec/cupid
