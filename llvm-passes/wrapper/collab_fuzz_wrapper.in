@@ -69,6 +69,7 @@ rt_libs = {
             "-Wl,--whole-archive",
             "@INST_COUNT_WRAPPER_RTLIB_PATH@",
             "-Wl,--no-whole-archive",
+            "-lm",
         ],
         [],
     ),
